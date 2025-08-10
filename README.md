@@ -6,3 +6,8 @@
 This is LuaJIT bindings and helper files to invoke Python.
 
 Maybe in the future there will be an interpreter and some runtime Python <-> Lua, and who knows, maybe one unified language to rule them all?
+
+## Example:
+```
+luajit run.lua test.py
+```
