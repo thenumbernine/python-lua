@@ -1,0 +1,30 @@
+--------------------------------------------
+-- generated with dist/build-distinfo.rua --
+--------------------------------------------
+
+name = "python"
+files = {
+	["LICENSE"] = "python/LICENSE",
+	["README.md"] = "python/README.md",
+	["ffi/python.lua"] = "python/ffi/python.lua",
+	["python.lua"] = "python/python.lua",
+	["run.lua"] = "python/run.lua",
+	["test.py"] = "python/test.py",
+}
+deps = {
+	"ext",
+	"ffi",
+}
+
+generateBindings = {
+	{
+		inc = '<Python.h>',
+		out = 'python.lua',
+		pkgconfig = 'python3',
+		macros = {
+			'__NO_INLINE__',
+			'PIL_NO_INLINE',
+			--'PY_SSIZE_T_CLEAN',	-- https://docs.python.org/3/extending/extending.html#a-simple-example
+		},
+	},
+}
