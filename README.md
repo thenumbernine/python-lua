@@ -5,6 +5,12 @@
 
 This is LuaJIT bindings and helper files to invoke Python.
 
+# Requirements
+Linux:
+```
+apt install python3
+```
+
 # Example:
 ```
 luajit run.lua test.py
