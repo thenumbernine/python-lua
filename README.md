@@ -19,3 +19,23 @@ luajit run.lua test.py
 # TODO
 - interpeter
 - Lua <-> Python interface
+
+goal / target use case:
+``` Lua
+local python = require 'python'
+-- TODO implicit interpreter state construction, or explicit?
+
+-- generate a function to load the python code
+loader = python[[
+print("2 + 2 =", 2 + 2)
+]]
+-- and load it
+loader()
+
+-- get stuff from python imports
+local test = python[[
+def Test:
+	return 42
+]]()
+assert(test.Test() == 42)
+```
