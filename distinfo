@@ -6,9 +6,10 @@ name = "python"
 files = {
 	["LICENSE"] = "python/LICENSE",
 	["README.md"] = "python/README.md",
-	["ffi/python.lua"] = "python/ffi/python.lua",
+	["lib.lua"] = "python/lib.lua",
 	["python.lua"] = "python/python.lua",
 	["run.lua"] = "python/run.lua",
+	["test.lua"] = "python/test.lua",
 	["test.py"] = "python/test.py",
 }
 deps = {
@@ -19,7 +20,7 @@ deps = {
 generateBindings = {
 	{
 		inc = '<Python.h>',
-		out = 'python.lua',
+		out = 'lib.lua',
 		pkgconfig = 'python3',
 		macros = {
 			'__NO_INLINE__',
