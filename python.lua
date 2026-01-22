@@ -1,6 +1,6 @@
 require 'ext.gc'	-- make sure luajit can __gc lua-tables
 local ffi = require 'ffi'
-local py = require 'python.lib'
+local py = require 'python.ffi.python'
 local class = require 'ext.class'
 
 -- for gc dtor vs singleton dtor
