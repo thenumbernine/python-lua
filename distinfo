@@ -17,7 +17,7 @@ deps = {
 	"ffi",
 }
 
-generateBindings = {
+generateBindings = function()return{
 	{
 		inc = '<Python.h>',
 		out = 'lib.lua',
@@ -28,4 +28,4 @@ generateBindings = {
 			--'PY_SSIZE_T_CLEAN',	-- https://docs.python.org/3/extending/extending.html#a-simple-example
 		},
 	},
-}
+}end
