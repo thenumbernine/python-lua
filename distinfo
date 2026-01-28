@@ -4,13 +4,14 @@
 
 name = "python"
 files = {
-	["LICENSE"] = "python/LICENSE",
-	["README.md"] = "python/README.md",
-	["lib.lua"] = "python/lib.lua",
-	["python.lua"] = "python/python.lua",
-	["run.lua"] = "python/run.lua",
-	["test.lua"] = "python/test.lua",
-	["test.py"] = "python/test.py",
+	"LICENSE",
+	"README.md",
+	"distinfo",
+	"ffi/python.lua",
+	"python.lua",
+	"run.lua",
+	"test.lua",
+	"test.py",
 }
 deps = {
 	"ext",
