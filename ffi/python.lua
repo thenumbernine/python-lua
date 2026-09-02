@@ -3890,9 +3890,6 @@ _PyMutex_Unlock(PyMutex *m)
 static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
     return ob->ob_refcnt;
 }
-static inline PyTypeObject* Py_TYPE(PyObject *ob) {
-    return ob->ob_type;
-}
 static inline Py_ssize_t Py_SIZE(PyObject *ob) {
     
    ((void) sizeof ((
@@ -3977,13 +3974,6 @@ static inline PyObject* _Py_XNewRef(PyObject *obj)
 {
     Py_XINCREF(((PyObject*)((obj))));
     return obj;
-}
-static inline int
-PyType_HasFeature(PyTypeObject *type, unsigned long feature)
-{
-    unsigned long flags;
-        flags = type->tp_flags;
-    return ((flags & feature) != 0);
 }
 static inline int PyType_Check(PyObject *op) {
     return PyType_HasFeature((Py_TYPE(((PyObject*)((op))))), ((1UL << 31)));
@@ -5038,9 +5028,41 @@ function wrapper.Py_XDECREF(op)
         wrapper.Py_DECREF(op)
     end
 end
+function wrapper.Py_TYPE(ob)
+    return ob.ob_type
+end
+
+function wrapper.PyType_HasFeature(type, feature)
+    return 0 ~= bit.band(type.tp_flags, feature)
+end
+
+-- object.h:
+
+-- there are so many...
+wrapper.Py_TPFLAGS_LONG_SUBCLASS = bit.lshift(1, 24)
+
+function wrapper.PyType_FastSubclass(type, flag)
+	return wrapper.PyType_HasFeature(type, flag)
+end
+
+-- longobject.h:
+function wrapper.PyLong_Check(op)
+	return wrapper.PyType_FastSubclass(
+		wrapper.Py_TYPE(op),
+		wrapper.Py_TPFLAGS_LONG_SUBCLASS
+	)
+end
 
 -- TODO generate this header
 ffi.cdef[[
+// compile.h #define's:
+enum {
+	Py_single_input = 256,
+	Py_file_input = 257,
+	Py_eval_input = 258,
+	Py_func_type_input = 345,
+};
+
 enum {
 	Py_CONSTANT_NONE = 0,
 	Py_CONSTANT_FALSE = 1,

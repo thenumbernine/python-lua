@@ -37,30 +37,33 @@ end
 local noneObj = {}
 
 local function pythonToLua(v)
-print('pythonToLua', v)	
-	if py.Py_IsNone(v) then
-print'none'		
+	if 0 ~= py.PyLong_Check(v) then
+--print('pythonToLua', v, 'is long')
+		return py.PyLong_AsLong(v)
+	elseif 0 ~= py.PyString_Check(v) then
+--print('pythonToLua', v, 'is string')
+		return ffi.string(py.PyUnicode_AsUTF8(v))
+	elseif 0 ~= py.PyFloat_Check(v) then
+--print('pythonToLua', v, 'is float')
+		return py.PyFloat_AsDouble(v)
+	elseif 0 ~= py.PyNumber_Check(v) then
+--print('pythonToLua', v, 'is number')
+		return py.PyNumber_AsSsize(o, ffi.null)
+	-- TODO PyDict_Check
+	-- TODO PyList_Check
+
+	elseif 0 ~= py.Py_IsTrue(v) then
+--print('pythonToLua', v, 'is true')
+		return true
+	elseif 0 ~= py.Py_IsFalse(v) then
+--print('pythonToLua', v, 'is false')
+		return false
+	elseif 0 ~= py.Py_IsNone(v) then
+--print('pythonToLua', v, 'is none')
 		--return noneObj
 		return nil
-	elseif py.PyObject_IsTrue(v) then
-print'true'		
-		return true
-	elseif py.PyObject_IsFalse(v) then
-print'fale'
-		return false
-	elseif py.PyFloat_Check(v) then
-print'float'
-		return py.PyFloat_AsDouble(v)
-	elseif py.PyNumber_Check(v) then
-print'number'		
-		return py.PyNumber_AsSsize(o, ffi.null)
-	elseif py.PyLong_Check(v) then
-print'long'
-		return py.PyLong_AsLong(v)
-	elseif py.PyString_Check(v) then
-print'string'
-		return ffi.string(py.PyUnicode_AsUTF8(v))
 	else
+--print('pythonToLua', v, 'is idk')
 		error'TODO'
 	end
 end
@@ -70,13 +73,18 @@ local function PythonDict(module)
 	return setmetatable({}, {
 		obj = obj,
 		__index = function(self, k)
+--print('getting index', k, 'from dict', obj)
+			k = tostring(k)
+			local v = py.PyDict_GetItemString(obj, k)
+--print('got value', v)
 			-- what's the difference?
-			--return pythonToLua(py.PyDict_GetItemString(obj, tostring(k)))
-			return pythonToLua(py.PyMapping_GetItemString(obj, tostring(k)))
+			return pythonToLua(v)
+			--return pythonToLua(py.PyMapping_GetItemString(obj, tostring(k)))
 			-- and how come my object always comes back nil?
 		end,
 		__newindex = function(self, k, v)
-			py.PyDict_SetItemString(obj, tostring(k), luaToPython(v))
+			k = tostring(k)
+			py.PyDict_SetItemString(obj, k, luaToPython(v))
 		end,
 		--[[ TODO
 		__gc = function(self)
@@ -84,6 +92,12 @@ local function PythonDict(module)
 			py.Py_XDECREF(getmetatable(self).obj)
 			getmetatable(self).obj = ffi.null
 			obj = ffi.null
+		end,
+		--]]
+		--[[ TODO
+		__pairs = function(self)
+		end,
+		__ipairs = function(self)
 		end,
 		--]]
 	})
@@ -102,39 +116,44 @@ function PythonEnv:init()
 	--[[ complex with config
 	local config = ffi.new('PyConfig[1]')
 	py.PyConfig_InitPythonConfig(config);
-    status = PyConfig_SetBytesString(config, config[0].program_name, argv[0]);
-    if (PyStatus_Exception(status)) {
-		PyConfig_Clear(config);	
-        Py_ExitStatusException(status);
+	status = PyConfig_SetBytesString(config, config[0].program_name, argv[0]);
+	if (PyStatus_Exception(status)) {
+		PyConfig_Clear(config);
+		Py_ExitStatusException(status);
 		os.exit(1)	-- or return or error() ?
-    }
+	}
 
-    status = Py_InitializeFromConfig(config);
-    if (PyStatus_Exception(status)) {
-		PyConfig_Clear(config);	
-        Py_ExitStatusException(status);
+	status = Py_InitializeFromConfig(config);
+	if (PyStatus_Exception(status)) {
+		PyConfig_Clear(config);
+		Py_ExitStatusException(status);
 		os.exit(1)	-- or return or error() ?
-    }
-    PyConfig_Clear(config);	
+	}
+	PyConfig_Clear(config);
 	--]]
-	
-	-- [[  https://wiki.python.org/moin/EmbeddingPythonTutorial
-	self.module = py.PyImport_ImportModule'__main__'
-	self.dict = PythonDict(self.module)
 
-    self.sys_module = py.PyImport_ImportModule'sys'
-    self.sys_dict = PythonDict(self.sys_module)
+	-- [[  https://wiki.python.org/moin/EmbeddingPythonTutorial
+	--self.module = py.PyImport_ImportModule'__main__'
+	-- reading that using PyImport_ImportModule'__main__' is prone to memory leaks...
+	self.module = py.PyImport_AddModule'__main__'
+print('__main__ module', self.module)
+	self.dict = PythonDict(self.module)
+print('__main__ dict', getmetatable(self.dict).obj)
+
+	self.sys_module = py.PyImport_ImportModule'sys'
+	self.sys_dict = PythonDict(self.sys_module)
 	py.PyDict_SetItemString(getmetatable(self.dict).obj, 'sys', self.sys_module)
 	--]]
 end
 
 -- is there no separate load/compile vs run? all at once?
-function PythonEnv:runFile(file)	-- struct _IO_FILE * 
+function PythonEnv:runFile(file)	-- struct _IO_FILE *
 	py.PyRun_SimpleFile(file)
 end
 function PythonEnv:runString(s)
+--print('running', s)
 	-- [[ run and done
-	py.PyRun_SimpleString(s)
+	return py.PyRun_SimpleString(s)
 	-- but then how do you access its contents?
 	--]]
 	--[[ https://docs.python.org/3/extending/embedding.html
@@ -150,6 +169,22 @@ function PythonEnv:runString(s)
 
 	-- get a variable from the module
 	--local func = py.PyObject_GetAttrString(module, 'greet')
+	--]]
+	--[[ Google AI's suggestion
+	-- returns a PyObject
+	local dictObj = getmetatable(self.dict).obj
+	-- Py_eval_input can evaluate and return expressions .... only.  no statements, functions, etc.
+	-- Py_file_input can handle statements and functions, but cannot return *anything* apart from assigning it. smh python.
+	-- ... and it looks like Py_CompileString will return values, but then doesn't write anything to the dict.
+	-- so there's no way to run code that can handle both expressions and statements, and be able to write to global/module scope, and return/export values...
+	--local result = py.PyRun_String(s, py.Py_eval_input, dictObj, dictObj)
+	local result = py.PyRun_String(s, py.Py_file_input, dictObj, dictObj)
+	if result == nil then	-- include in pythonToLua?
+		return false, 'PyRun_String returned NULL\n'..s
+	end
+	-- what does Py_file_input return anyways?  what even can it return?
+	return true
+	--return pythonToLua(result)
 	--]]
 end
 PythonEnv.__call = PythonEnv.runString
