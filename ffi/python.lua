@@ -4994,7 +4994,24 @@ PyObject_CallMethodOneArg(PyObject *self, PyObject *name, PyObject *arg)
 
 --]]
 
-local lib = require 'ffi.load' 'libpython3.13.so'
+--[[
+So this is a bit comical.
+`apt python3-dev` package doesn't ever install a major-version-only libpython.
+It always requires you to reference it by minor version as well.
+So I asked Google AI how to resolve at runtime?
+Official answer: "use python to determine how to load python." 🤦
+Complete with this example:
+	gcc main.c -o my_app -ldl -DPYTHON_SO="\"libpython$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")').so.1.0\""
+So I can just equivalently do...
+	libpython$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")').so.1.0\"
+So you always need the python runtime in the env path in order to just access the python library.
+SMH this is a design flaw.
+Please just include the major version symlink like everyone else.
+--]]
+--local lib = require 'ffi.load' 'libpython3.13.so'
+local io = require 'ext.io'
+local string = require 'ext.string'
+local lib = ffi.load(string.trim(io.readproc[[python3 -c 'import sys; vi=sys.version_info; print(f"libpython{vi.major}.{vi.minor}.so.1.0")']]))
 local wrapper = require 'ffi.libwrapper'{
 	lib = lib,
 	defs = {},
